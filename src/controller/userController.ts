@@ -3,6 +3,7 @@ import { withAccelerate } from "@prisma/extension-accelerate";
 import { Context } from "hono";
 import { signInSchema, signUpSchema } from "../zod/user";
 import { Jwt } from "hono/utils/jwt";
+import { log } from "console";
 
 enum StatusCode {
   BAD_REQ = 400,
@@ -15,7 +16,6 @@ export const signup = async (c: Context) => {
     datasourceUrl: c.env.DATABASE_URL,
   }).$extends(withAccelerate());
 
-  console.log("control reached here");
   try {
     const body: {
       username: string;
@@ -63,7 +63,9 @@ export const signup = async (c: Context) => {
 };
 
 export const signIn = async (c: Context) => {
-  const prisma = new PrismaClient({ datasourceUrl: c.env.DATABASE_URL });
+  const prisma = new PrismaClient({
+    datasourceUrl: c.env.DATABASE_URL,
+  }).$extends(withAccelerate());
 
   try {
     const credentials: {
@@ -89,7 +91,11 @@ export const signIn = async (c: Context) => {
       );
     }
     const { id, email, username } = userExist;
-    const token = Jwt.sign(id, c.env.JWT_SECRET);
+
+    console.log(id);
+
+    const token = await Jwt.sign(id, c.env.JWT_SECRET);
+
     return c.json({
       message: "Login Successful",
       token: token,

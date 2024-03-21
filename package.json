@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240222.0",
-    "@types/node": "^20.11.29",
+    "@types/node": "^20.11.30",
     "dotenv-cli": "^7.4.1",
     "prisma": "^5.11.0",
     "typescript": "^5.4.2",
