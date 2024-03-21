@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client/edge";
 import { withAccelerate } from "@prisma/extension-accelerate";
 import { Context } from "hono";
 import { signInSchema, signUpSchema } from "../zod/user";
@@ -13,7 +13,7 @@ enum StatusCode {
 export const signup = async (c: Context) => {
   const prisma = new PrismaClient({
     datasourceUrl: c.env.DATABASE_URL,
-  });
+  }).$extends(withAccelerate());
 
   console.log("control reached here");
   try {
