@@ -3,7 +3,6 @@ import { withAccelerate } from "@prisma/extension-accelerate";
 import { Context } from "hono";
 import { signInSchema, signUpSchema } from "../zod/user";
 import { Jwt } from "hono/utils/jwt";
-import { log } from "console";
 
 enum StatusCode {
   BAD_REQ = 400,
@@ -45,7 +44,7 @@ export const signup = async (c: Context) => {
       },
     });
     const { id, username, email, password } = newUser;
-    await prisma.$disconnect();
+
     return c.json({
       message: "User Created Succesfully",
       user: {
@@ -56,8 +55,8 @@ export const signup = async (c: Context) => {
       },
     });
   } catch (e) {
-    console.log(e);
-    await prisma.$disconnect();
+    console.error(e);
+
     return c.json({ message: `Internal Server Err : ${e}` }, 500);
   }
 };
@@ -83,7 +82,7 @@ export const signIn = async (c: Context) => {
         password: credentials.password,
       },
     });
-    await prisma.$disconnect();
+
     if (!userExist) {
       return c.json(
         { message: "User does not exists, Please SignUp First" },
@@ -102,7 +101,6 @@ export const signIn = async (c: Context) => {
       user: { id, email, username },
     });
   } catch (e) {
-    console.log(e);
-    await prisma.$disconnect();
+    console.error(e);
   }
 };
