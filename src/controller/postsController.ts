@@ -47,7 +47,10 @@ export const createPost = async (c: Context) => {
     const body: {
       title: string;
       body: string;
+      tags: string;
     } = await c.req.json();
+
+    const tagNames = body.tags.split(",").map((tag) => tag.trim());
 
     if (!body.body || !body.title) {
       return c.json(
@@ -56,15 +59,33 @@ export const createPost = async (c: Context) => {
       );
     }
 
-    const crtPost = await prisma.posts.create({
+    const res = await prisma.posts.create({
       data: {
         title: body.title,
         body: body.body,
         User: { connect: { id: userId } },
+        tags: {
+          connectOrCreate: tagNames.map((tag) => ({
+            where: { tag },
+            create: { tag },
+          })),
+        },
+      },
+      include: {
+        tags: true,
       },
     });
-    console.log(crtPost);
-    return c.json({ message: "Post Created Succesfully", post: crtPost });
+
+    return c.json({
+      message: "Post created successfully",
+      post: {
+        id: res.id,
+        title: res.title,
+        body: res.body,
+        tags: res.tags.map((tag) => tag.tag),
+        createdAt: res.createdAt,
+      },
+    });
   } catch (err) {
     console.error(err);
     return c.json({ error: `Internal server error : ${err}` }, 500);
@@ -93,7 +114,7 @@ export const deletePost = async (c: Context) => {
         userId: c.get("userId"),
       },
     });
-    return c.json({ message: "Post Deleted Succesfully" });
+    return c.json({ message: "Post Deleted Succesfully" }, 200);
   } catch (err) {
     console.error(err);
     return c.json({ error: `Internal server error : ${err}` }, 500);
@@ -107,16 +128,28 @@ export const getPost = async (c: Context) => {
 
   try {
     const postId: number = parseInt(c.req.param("id"));
-    const findPost = await prisma.posts.findFirst({
+    const isPostExist = await prisma.posts.findFirst({
       where: {
         id: postId,
         userId: c.get("userId"),
       },
+      include: {
+        tags: true,
+      },
     });
-    if (!findPost) {
+    if (!isPostExist) {
       return c.json({ error: `Post not found` }, StatusCode.NOTFOUND);
     }
-    return c.json({ post: findPost });
+
+    return c.json({
+      data: {
+        id: isPostExist.id,
+        title: isPostExist.title,
+        body: isPostExist.body,
+        tags: isPostExist.tags,
+        createdAt: isPostExist.createdAt,
+      },
+    });
   } catch (err) {
     console.error(err);
     return c.json({ error: `Internal server error : ${err}` }, 500);
@@ -170,7 +203,10 @@ export const updatePost = async (c: Context) => {
     const body: {
       title?: string;
       body?: string;
+      tags?: string;
     } = await c.req.json();
+
+    const tagNames = body.tags?.split(",").map((tag) => tag.trim());
 
     if (!body.body && !body.title)
       return c.json(
@@ -185,6 +221,15 @@ export const updatePost = async (c: Context) => {
       data: {
         title: body.title,
         body: body.title,
+        tags: {
+          connectOrCreate: tagNames?.map((tag) => ({
+            where: { tag },
+            create: { tag },
+          })),
+        },
+      },
+      include: {
+        tags: true,
       },
     });
     return c.json({

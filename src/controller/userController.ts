@@ -3,7 +3,6 @@ import { withAccelerate } from "@prisma/extension-accelerate";
 import { Context } from "hono";
 import { signInSchema, signUpSchema } from "../zod/user";
 import { Jwt } from "hono/utils/jwt";
-import { AsyncLocalStorage } from "async_hooks";
 
 export enum StatusCode {
   BAD_REQ = 400,
