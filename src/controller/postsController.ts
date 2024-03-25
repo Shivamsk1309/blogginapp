@@ -1,6 +1,5 @@
 import { PrismaClient } from "@prisma/client/edge";
 import { withAccelerate } from "@prisma/extension-accelerate";
-import { log } from "console";
 
 import { Context } from "hono";
 
@@ -130,6 +129,19 @@ export const getUserPosts = async (c: Context) => {
   }).$extends(withAccelerate());
 
   try {
+    const userPosts = await prisma.posts.findMany({
+      where: {
+        userId: c.get("userId"),
+      },
+    });
+    if (!userPosts)
+      return c.json(
+        { error: "No posts, Start with creating new posts!" },
+        StatusCode.NOTFOUND
+      );
+    return c.json({
+      post: userPosts,
+    });
   } catch (err) {
     console.error(err);
     return c.json({ error: `Internal server error : ${err}` }, 500);
@@ -141,6 +153,44 @@ export const updatePost = async (c: Context) => {
     datasourceUrl: c.env.DATABASE_URL,
   }).$extends(withAccelerate());
   try {
+    const userId = c.get("userId");
+    const postId = c.req.param("id");
+    const isPostExist = await prisma.posts.findFirst({
+      where: {
+        id: parseInt(c.req.param("id")),
+        userId: userId,
+      },
+    });
+    if (!isPostExist)
+      return c.json({
+        error: `Cant find post with id : ${c.req.param(
+          "id"
+        )} associated with user : ${userId}`,
+      });
+    const body: {
+      title?: string;
+      body?: string;
+    } = await c.req.json();
+
+    if (!body.body && !body.title)
+      return c.json(
+        { error: `Body or Title is required to update` },
+        StatusCode.NOTFOUND
+      );
+    const res = await prisma.posts.update({
+      where: {
+        id: Number(postId),
+        userId: userId,
+      },
+      data: {
+        title: body.title,
+        body: body.title,
+      },
+    });
+    return c.json({
+      message: `Post updated`,
+      updatedPost: res,
+    });
   } catch (err) {
     console.error(err);
     return c.json({ error: `Internal server error : ${err}` }, 500);
