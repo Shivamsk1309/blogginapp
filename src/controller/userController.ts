@@ -3,8 +3,9 @@ import { withAccelerate } from "@prisma/extension-accelerate";
 import { Context } from "hono";
 import { signInSchema, signUpSchema } from "../zod/user";
 import { Jwt } from "hono/utils/jwt";
+import { AsyncLocalStorage } from "async_hooks";
 
-enum StatusCode {
+export enum StatusCode {
   BAD_REQ = 400,
   NOTFOUND = 404,
   NOTPERMISSION = 403,
@@ -91,8 +92,6 @@ export const signIn = async (c: Context) => {
     }
     const { id, email, username } = userExist;
 
-    console.log(id);
-
     const token = await Jwt.sign(id, c.env.JWT_SECRET);
 
     return c.json({
@@ -102,5 +101,18 @@ export const signIn = async (c: Context) => {
     });
   } catch (e) {
     console.error(e);
+  }
+};
+
+export const getAllUsers = async (c: Context) => {
+  const prisma = new PrismaClient({
+    datasourceUrl: c.env.DATABASE_URL,
+  }).$extends(withAccelerate());
+  try {
+    const users = await prisma.user.findMany();
+    return c.json({ message: "All Users", users });
+  } catch (e) {
+    console.error(e);
+    return c.json({ message: `Internal Server Err : ${e}` }, 500);
   }
 };
